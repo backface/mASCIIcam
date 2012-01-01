@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
@@ -73,13 +74,20 @@ implements SurfaceHolder.Callback, Runnable
     private String[] vlines;
     //private String symbolstr = " .,_:;onmwYOR%$#";
     private char[] symbolarr = {' ', '.', ',',':','+','=','Y','o','n','m','w','%','Q','R','$','#'};
-     
+    // All ASCII characters, sorted according to their visual density
+    // from processing
+    /*private String letterOrder =
+      " .`-_':,;^=+/\"|)\\<>)iv%xclrs{*}I?!][1taeo7zjLu" +
+      "nT#JCwfy325Fp6mqSghVd4EgXPGZbYkOA&8U$@KHDBWNMR0Q";
+    */
     protected static boolean mResolutionChanged=false;
     private boolean mHasMultipleCameras = false;
     private boolean showFPS = false;    
     private boolean	mInvert = false;
 	private boolean mFlashIsOn = false;    
     private boolean mThreadRun;
+    private boolean flipH = false;
+    private boolean flipV = false;
 
     
     public MASCIICamView(Context context) 
@@ -224,13 +232,15 @@ implements SurfaceHolder.Callback, Runnable
 	    	
 	        Imgproc.resize(mYuv, mGraySubmat, new Size(w,h+h/2));
 	    	mGray = mGraySubmat.submat(0, h, 0, w);
-	    	
-	    	/*for (int i = 0; i < frameSize; i++) {
-	            int y = (0xff & ((int) data[i]));
-	            rgba[i] = 0xff000000 + (y << 16) + (y << 8) + y;
-	        }*/
+	    	if (flipV && flipH)
+	    		Core.flip(mGray.clone(), mGray, -1);
+	    	else if (flipV)
+	    		Core.flip(mGray.clone(), mGray, 1);
+	    	else if (flipH)
+	    		Core.flip(mGray.clone(), mGray, 0);
 	        
 	    	int v = 0;
+	    	//float d = (float)letterOrder.length()/(float)256;
 
 	    	//if (DEBUG) Log.i(TAG,"size:" + mGray.rows() + "x" + mGray.cols());
 	    	//if (DEBUG) Log.i(TAG,"size:" + mCanvasWidth + "x" + mCanvasHeight);
@@ -240,13 +250,17 @@ implements SurfaceHolder.Callback, Runnable
 	          //  	if (DEBUG) Log.i(TAG,"row:" + row);
 	            	vlines[row] = "";
 	            	for(int col=0; col < mGray.cols(); col++) {        		
+	            		
 	            		if (isFrontCamera())
 	            			v = (int)mGray.get(row, mGray.cols() - col - 1)[0];
 	            		else
-	            			v = (int)mGray.get(row, col)[0];
+	            			v = (int)mGray.get(row, col)[0];    		
+	            		
 	            		if (mInvert)
 	            			v = 255 - v;    
+	            		
 	            		vlines[row] = vlines[row] + symbolarr[v/16];
+	            		//vlines[row] = vlines[row] + letterOrder.charAt((int)(d*v));
 	                }
 	            	
 	            }
@@ -263,6 +277,7 @@ implements SurfaceHolder.Callback, Runnable
 	            		if (mInvert)
 	            			v = 255 - v;  
 	            		vlines[row] = vlines[row] + symbolarr[v/16];
+	            		//vlines[row] = vlines[row] + letterOrder.charAt((int)(d*v));	            		
 	                }
 	            }
 	            
@@ -278,6 +293,7 @@ implements SurfaceHolder.Callback, Runnable
 	            		if (mInvert)
 	            			v = 255 - v;  
 	            		vlines[col] = vlines[col] + symbolarr[v/16];
+	            		//vlines[row] = vlines[row] + letterOrder.charAt((int)(d*v));	            		
 	            	}
 	            }
 	        } else if (mDrawRotation == 270) {        
@@ -292,6 +308,7 @@ implements SurfaceHolder.Callback, Runnable
 	            		if (mInvert)
 	            			v = 255 - v;  
 	            		vlines[col] = vlines[col] + symbolarr[v/16];
+	            		//vlines[row] = vlines[row] + letterOrder.charAt((int)(d*v));	            		
 	            	}
 	            }
 	        } else {
@@ -629,9 +646,10 @@ implements SurfaceHolder.Callback, Runnable
    	
 			   		synchronized(this) {
 			   			for(int i=0; i<vlines.length;i++)
-			   				fOut.write(vlines[i]+"\n");
+			   				fOut.write(vlines[i]+"\n");			   			
 			   		}
-			   		
+
+			   		fOut.write(" (shot with mASCIIcam on Android) \n");			   		
 				    fOut.flush();
 			   		fOut.close();	
 
@@ -652,6 +670,8 @@ implements SurfaceHolder.Callback, Runnable
 			   		fOut.write("<pre>\n");
 			   		for(int i=0; i<vlines.length;i++)
 			   			fOut.write("<b>" + vlines[i] + "</b>\n");
+			   		
+			   		fOut.write("  (shot with <a href=\"http://market.android.com/details?id=com.mash.masciicam\">mASCIIcam</a> on Android)\n");
 			   		fOut.write("</pre>\n");			   		
 			   		fOut.write("</body>\n");
 			   		fOut.write("</html>\n");
@@ -690,6 +710,29 @@ implements SurfaceHolder.Callback, Runnable
     		if (DEBUG) Log.i(TAG, "turning flash on");    		
     	}  
     	mCamera.setParameters(params);
+	}
+
+
+	public void toggleFlipV() {
+    	if (flipV) 
+    		flipV = false;
+    	else
+    		flipV = true;	
+	}
+	
+	public void toggleFlipH() {
+    	if (flipH) 
+    		flipH = false;
+    	else
+    		flipH = true;			
+	}	
+
+	public boolean isFlipV() {
+		return flipV;		
+	}
+
+	public boolean isFlipH() {
+		return flipH;		
 	}
 	
 /*

@@ -43,7 +43,9 @@ public class MASCIICamActivity extends Activity
     private MenuItem	 		mItemSettings;
     private MenuItem	 		mItemFPS;
     private MenuItem	 		mItemInvert;
-    private MenuItem	 		mItemFlash;  
+    private MenuItem	 		mItemFlash;
+    private MenuItem	 		mItemFlipH;  
+    private MenuItem	 		mItemFlipV;  
     
     
     private PowerManager.WakeLock mWakeLock;        
@@ -160,10 +162,21 @@ public class MASCIICamActivity extends Activity
         		mItemBackCamera =  cameraMenu.add("Back facing camera");
         	}
         }    
+        
+        if (mView.isFlipV())
+        	mItemFlipV = menu.add("Flip vertical off");
+        else
+        	mItemFlipV = menu.add("Flip vertical"); 
+
+        if (mView.isFlipH())
+        	mItemFlipH = menu.add("Flip horizontal off");
+        else
+        	mItemFlipH = menu.add("Flip horizontal");   
+        
         if (mView.getInvert())
         	mItemInvert = menu.add("Inverse off");
         else
-        	mItemInvert = menu.add("Inverse"); 
+        	mItemInvert = menu.add("Inverse");              
         
         if (mView.getFlashModes() != null) {
 	        if (mView.isFlashOn())
@@ -240,7 +253,12 @@ public class MASCIICamActivity extends Activity
         else if (item == mItemFPS)
         	mView.toggleFPSDisplay();
         else if (item == mItemInvert)
-        	mView.toggleInvert();   
+        	mView.toggleInvert(); 
+        else if (item == mItemFlipV)
+        	mView.toggleFlipV();
+        else if (item == mItemFlipH)
+        	mView.toggleFlipH();         
+        
         else if (item == mItemFlash)
         	mView.toggleFlash();
         else if (item == mItemFocusAuto)
