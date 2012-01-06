@@ -3,3 +3,6 @@ mASCIIcam
 an ASCII camera for Android
 Michael Aschauer
 http://m.ash.to
+
+requirements:
+- OpenCV (see: http://opencv.willowgarage.com/wiki/Android)
